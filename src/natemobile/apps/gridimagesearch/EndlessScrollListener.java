@@ -1,5 +1,6 @@
 package natemobile.apps.gridimagesearch;
 
+import android.util.Log;
 import android.widget.AbsListView;
 import android.widget.AbsListView.OnScrollListener;
 
@@ -56,6 +57,7 @@ public abstract class EndlessScrollListener implements OnScrollListener {
         if (totalItemCount < previousTotalItemCount) {
             this.currentPage = this.startingPageIndex;
             this.previousTotalItemCount = totalItemCount;
+            Log.d("DEBUG", "EndlessScroller is resetting.");
             if (totalItemCount == 0) { this.loading = true; } 
         }
 
@@ -66,12 +68,14 @@ public abstract class EndlessScrollListener implements OnScrollListener {
             loading = false;
             previousTotalItemCount = totalItemCount;
             currentPage++;
+            Log.d("DEBUG", "EndlessScroller still loading");
         }
 
         // If it isn’t currently loading, we check to see if we have breached
         // the visibleThreshold and need to reload more data.
         // If we do need to reload some more data, we execute onLoadMore to fetch the data.
         if (!loading && (totalItemCount - visibleItemCount)<=(firstVisibleItem + visibleThreshold)) {
+        	Log.d("DEBUG", "EndlessScroller needs to load more data");
             onLoadMore(currentPage + 1, totalItemCount);
             loading = true;
         }
