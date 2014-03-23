@@ -1,0 +1,40 @@
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/container"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context="natemobile.apps.gridimagesearch.SearchActivity"
+    tools:ignore="MergeRootFrame" >
+
+    <EditText
+        android:id="@+id/etQuery"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentLeft="true"
+        android:layout_alignParentTop="true"
+        android:ems="10"
+        android:hint="@string/searchQueryHint" >
+
+        <requestFocus />
+    </EditText>
+
+    <Button
+        android:id="@+id/btnSearch"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentTop="true"
+        android:onClick="onImageSearch"
+        android:layout_toRightOf="@+id/etQuery"
+        android:text="@string/btnSearch" />
+
+    <GridView
+        android:id="@+id/gvResults"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_alignParentLeft="true"
+        android:layout_below="@+id/btnSearch"
+        android:numColumns="3" >
+    </GridView>
+
+</RelativeLayout>
+

@@ -1,0 +1,12 @@
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    tools:context="natemobile.apps.gridimagesearch.ImageFilterActivity" >
+
+    <item
+        android:id="@+id/miSaveSettings"
+        android:icon="@drawable/ic_settings"
+        android:onClick="onSaveFilterSettingsPress"
+        android:showAsAction="always"
+        android:title="@string/action_settings"/>
+
+</menu>
