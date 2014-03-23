@@ -31,7 +31,7 @@ import com.loopj.android.http.JsonHttpResponseHandler;
  */
 public class SearchActivity extends Activity {
 
-	public static final String GOOGLE_MAIN_REQUEST_URL = "https://ajax.googleapis.com/ajax/services/search/images?v=1.0&q=";
+	public static final String GOOGLE_MAIN_REQUEST_URL = "https://ajax.googleapis.com/ajax/services/search/images?v=1.0&rsz=8&q=";
 	public static final String GOOGLE_FILTER_IMG_SIZE = "&imgsz=";
 	public static final String GOOGLE_FILTER_IMG_TYPE = "&imgtype=";
 	public static final String GOOGLE_FILTER_IMG_COLOR = "&imgcolor=";
@@ -59,6 +59,9 @@ public class SearchActivity extends Activity {
 	/** Image Adapter for binding image result objects to view */
 	ImageResultArrayAdapter imageAdapter;
 	
+	/** Image filter data */
+	ImageFilterSettings imageFilterSettings = null;
+	
 	
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
@@ -79,6 +82,16 @@ public class SearchActivity extends Activity {
 				ImageResult imageResult = imageResults.get( position );
 				i.putExtra( "result" , imageResult );
 				startActivity(i);
+			}
+		});
+		
+		// Setup customized onScroll listener (Endless scroll)
+		gvResults.setOnScrollListener( new EndlessScrollListener() {
+			
+			@Override
+			public void onLoadMore(int page, int totalItemsCount) {
+				Log.d("DEBUG", "OnLoadMore:" + page + ":" + totalItemsCount);
+				
 			}
 		});
 	}
@@ -114,18 +127,52 @@ public class SearchActivity extends Activity {
 		
 		Toast.makeText( this, "Searching for " + query, Toast.LENGTH_SHORT).show();
 		
-		// TODO:
-		requestImageSearch( query, "","","","" );
+		// If there is no customized filter setting, using default one
+		if ( imageFilterSettings == null ) {
+			Log.d("DEBUG", "Default Filter Settings");
+			requestImageSearch( query, null, null, null, null );
+		} else {
+			Log.d("DEBUG", "Customized Filter Settings");
+			requestImageSearchByObject( imageFilterSettings );
+		}
 		
 	}
 	
 	/**
-	 * 
-	 * @param query
-	 * @param size
-	 * @param color
-	 * @param type
-	 * @param site
+	 * Callback when filter setting icon on the action bar is pressed.
+	 * @param mi
+	 */
+	public void onFilterSettingsPress(MenuItem mi) {
+		Intent i = new Intent( this, ImageFilterActivity.class );
+		startActivityForResult( i , REQUEST_FILTER_CODE );	
+	}
+	
+	/**
+	 * Callback when return to this activity from other activity
+	 */
+	@Override
+	protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+		if ( requestCode == REQUEST_FILTER_CODE && resultCode == RESULT_OK ) {
+			
+			// Retrieve settings data from ImageFilterActivity.
+			ImageFilterSettings filterData = (ImageFilterSettings) data.getSerializableExtra("result");
+			
+			// Save this filter settings for subsequent used.
+			imageFilterSettings = filterData;	
+			
+			// Update the search result with a new filter settings
+			requestImageSearchByObject( filterData );
+		}
+	}
+	
+	/**
+	 * Request an image search result by filter values
+	 * See https://developers.google.com/image-search/v1/jsondevguide#json_snippets_java for details
+	 * @param query		String search query
+	 * @param size		Image size
+	 * @param color		Image color
+	 * @param type		Image type
+	 * @param site		Image specific domain (i.e. yahoo.com, photobucket.com)
 	 */
 	private void requestImageSearch(String query, String size, String color, String type, String site) {
 		// Send ASYNC HTTP client Request
@@ -139,17 +186,14 @@ public class SearchActivity extends Activity {
 					@Override
 					public void onSuccess(JSONObject response) {
 						JSONArray imageJsonResults = null;
+						JSONObject imageCursorResults = null;
 						try {
 							// Get data coming back from API response
 							imageJsonResults = response.getJSONObject("responseData").getJSONArray("results");
-
-							// TODO: Note probably need to implement callback to separate this logic from view
-							imageResults.clear();	// clear result
-							imageAdapter.addAll( ImageResult.fromJSONArray(imageJsonResults)); // parse result
-
-
-							Log.d("DEBUG", imageResults.toString() );
-							Log.d("DEBUG", "total " + imageResults.size());
+							imageCursorResults = response.getJSONObject("responseData").getJSONObject("cursor");
+							Log.d("DEBUG", "Total Result " + imageCursorResults.getString("estimatedResultCount"));
+							Log.d("DEBUG", "Current Page Index is " + imageCursorResults.getString("currentPageIndex"));
+							updateImageAdapter( imageJsonResults );
 
 						} catch (JSONException e) {
 							e.printStackTrace();
@@ -161,36 +205,30 @@ public class SearchActivity extends Activity {
 				});	
 	}
 	
+	/**
+	 * Request image search result by the given ImageFilterSettings object
+	 * @param obj
+	 */
 	private void requestImageSearchByObject( ImageFilterSettings obj ) {
 		String query = etQuery.getText().toString();
 		requestImageSearch( query, obj.getFilterSize(), obj.getFilterColor(), obj.getFilterType(), obj.getFilterDomain() );
 	}
 	
 	/**
-	 * Callback when filter setting icon on the action bar is pressed.
-	 * @param mi
+	 * Update image adapter with the given JSONArray result from GOOGLE response
+	 * @param imageJsonResults
 	 */
-	public void onFilterSettingsPress(MenuItem mi) {
-		Intent i = new Intent( this, ImageFilterActivity.class );
-		startActivityForResult( i , REQUEST_FILTER_CODE );	
-	}
-	
-	
-	@Override
-	protected void onActivityResult(int requestCode, int resultCode, Intent data) {
-		if ( requestCode == REQUEST_FILTER_CODE && resultCode == RESULT_OK ) {
-			ImageFilterSettings filterData = (ImageFilterSettings) data.getSerializableExtra("result");
-			
-			// TODO: Remove this once done
-			if ( filterData == null ) {
-				Log.d("DEBUG", "shit");
-			} else {
-				Log.d("DEBUG", filterData.toString());	
-			}
-			
-			requestImageSearchByObject( filterData );
-		}
-	}
+	private void updateImageAdapter( JSONArray imageJsonResults ) {
+		imageResults.clear();	// clear result
+		
+		// TODO: Need to handle what if image not showing up
+		
+		imageAdapter.addAll( ImageResult.fromJSONArray(imageJsonResults)); // parse result and update adapter
+		
+		Log.d("DEBUG", imageResults.toString() );
+		Log.d("DEBUG", "total " + imageResults.size());
+	}	
+
 	
 	////////////////////////////////////////////////////////////
 	// Helper function for sending query to Google Image
@@ -198,8 +236,8 @@ public class SearchActivity extends Activity {
 	
 	/**
 	 * Get an image query URL based on query String
-	 * @param query
-	 * @return
+	 * @param query	Search string query
+	 * @return Query URL string.
 	 */
 	public String getImageQueryURLString( String query ) {
 		String result = GOOGLE_MAIN_REQUEST_URL + Uri.encode(query);
@@ -208,20 +246,21 @@ public class SearchActivity extends Activity {
 	
 	/**
 	 * Get an image query URL based on the given criteria and query string
-	 * @param query
-	 * @param size
-	 * @param color
-	 * @param type
-	 * @param site
-	 * @return
+	 * @param query		Search string query
+	 * @param size		Image size
+	 * @param color		Image color
+	 * @param type		Image type
+	 * @param site		Image specific domain
+	 * @return Query URL string with appropriate parameters.
 	 */
 	public String getImageQueryURLString(String query, String size, String color, String type, String site ) {
-		String filterSize = GOOGLE_FILTER_IMG_SIZE + Uri.encode( size );
-		String filterColor =  GOOGLE_FILTER_IMG_COLOR+ Uri.encode( color );
-		String filterType =  GOOGLE_FILTER_IMG_TYPE+ Uri.encode( type );
-		String filterSite = GOOLGE_FILTER_IMG_DOMAIN + Uri.encode( site );
+		String filterSize = (size!=null)?GOOGLE_FILTER_IMG_SIZE + Uri.encode( size ):"";
+		String filterColor =  (color!=null)?GOOGLE_FILTER_IMG_COLOR+ Uri.encode( color ):"";
+		String filterType =  (type!=null)?GOOGLE_FILTER_IMG_TYPE+ Uri.encode( type ):"";
+		String filterSite = (site!=null)?GOOLGE_FILTER_IMG_DOMAIN + Uri.encode( site ):"";
 		
 		String result = getImageQueryURLString(query) + filterSize + filterColor + filterType + filterSite;
+		Log.d("DEBUG", "URL Query is " + result);
 		return result;
 	}
 
