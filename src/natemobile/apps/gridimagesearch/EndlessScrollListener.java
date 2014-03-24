@@ -16,7 +16,8 @@ import android.widget.AbsListView.OnScrollListener;
 public abstract class EndlessScrollListener implements OnScrollListener {
 	 // The minimum amount of items to have below your current scroll position
     // before loading more.
-    private int visibleThreshold = 5;
+	// TODO: NOTE this thing is crazy. May make it works or break!!!!!
+    private int visibleThreshold = 3;
     
     // The current offset index of data you have loaded
     private int currentPage = 0;
@@ -55,12 +56,11 @@ public abstract class EndlessScrollListener implements OnScrollListener {
         // If the total item count is zero and the previous isn't, assume the
         // list is invalidated and should be reset back to initial state
         if (totalItemCount < previousTotalItemCount) {
+        	Log.d("DEBUG", "EndlessScroller is resetting. TotalItemCount:" + totalItemCount + "Previous::" + previousTotalItemCount);
             this.currentPage = this.startingPageIndex;
             this.previousTotalItemCount = totalItemCount;
-            Log.d("DEBUG", "EndlessScroller is resetting.");
             if (totalItemCount == 0) { 
             	this.loading = true;
-            	Log.d("DEBUG", "EndlessScroller is resetting and totlaItem is zero!");
             } 
         }
 
@@ -71,17 +71,22 @@ public abstract class EndlessScrollListener implements OnScrollListener {
             loading = false;
             previousTotalItemCount = totalItemCount;
             currentPage++;
-            Log.d("DEBUG", "EndlessScroller still loading");
+            //Log.d("DEBUG", "EndlessScroller still loading");
         }
 
         // If it isn’t currently loading, we check to see if we have breached
         // the visibleThreshold and need to reload more data.
         // If we do need to reload some more data, we execute onLoadMore to fetch the data.
         if (!loading && (totalItemCount - visibleItemCount)<=(firstVisibleItem + visibleThreshold)) {
-        	Log.d("DEBUG", "EndlessScroller needs to load more data");
-            onLoadMore(currentPage + 1, totalItemCount);
+        	Log.d("DEBUG", "EndlessScroller needs to load more data.");
+
+        	// TODO: How the heck this get triggered when there is no scroll going on , just loading the app.
+        	onLoadMore(currentPage + 1, totalItemCount);
+        	
             loading = true;
         }
+        
+        Log.d("DEBUG", "EndlessScroll:OnScroll--: Vislble Item Count:: " + visibleItemCount + ": TotalItemCount" + totalItemCount);
     }
     
     // Defines the process for actually loading more data based on page
@@ -89,7 +94,6 @@ public abstract class EndlessScrollListener implements OnScrollListener {
 
     @Override
     public void onScrollStateChanged(AbsListView view, int scrollState) {
-        // Don't take any action on changed
     }
 
 }

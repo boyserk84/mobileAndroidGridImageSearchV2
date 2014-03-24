@@ -17,8 +17,10 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewDebug.IntToString;
+import android.widget.AbsListView.OnScrollListener;
 import android.widget.AdapterView;
 import android.widget.AdapterView.OnItemClickListener;
+import android.widget.AbsListView;
 import android.widget.EditText;
 import android.widget.GridView;
 import android.widget.Toast;
@@ -30,6 +32,11 @@ import com.loopj.android.http.JsonHttpResponseHandler;
  * SearchActivity Class
  * Controller for main app -- search image
  * @author nkemavaha
+ *
+ *
+ * Current issues
+ * - Image not showing up on the activity although URL to thumbnail image is valid. Coming back if go to diff activity and coming back.
+ * - New search query result only showing up 8 and scroll (endlessly) won't work or at least not visible for me.
  *
  */
 public class SearchActivity extends Activity {
@@ -66,11 +73,18 @@ public class SearchActivity extends Activity {
 	/** Image filter data */
 	ImageFilterSettings imageFilterSettings = null;
 	
+	/** Flag to indicate whether we should clear all result or not*/
 	private boolean shouldClearResult = true;
 	
+	/** Starting index/offset for Goolge API */
 	private int startIndex = 4;
 	
+	/** Search query term */
 	private String searchQuery = "";
+	
+	
+	/** Flag checking if last request is successful.*/
+	private boolean isLastRequestSuccess = true;
 	
 	
 	@Override
@@ -78,12 +92,22 @@ public class SearchActivity extends Activity {
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.activity_search);
 		setupViews();
+		Log.d("DEBUG", "StartOnCreate -----------------------------");
 		
 		// Setup adapter
 		imageAdapter = new ImageResultArrayAdapter( this , imageResults );
 		gvResults.setAdapter( imageAdapter );
 		
-		Log.d("DEBUG", "StartOnCreate -----------------------------");
+		// Setup customized onScroll listener (Endless scroll)
+		gvResults.setOnScrollListener( new EndlessScrollListener() {
+			
+			@Override
+			public void onLoadMore(int page, int totalItemsCount) {
+				Log.d("DEBUG", "onLoadMore Page:: " + page + ": TotalItemsCount::" + totalItemsCount );
+				requestMoreImages(page);			
+				
+			}
+		});
 		
 		// Click on item and open full screen activity
 		gvResults.setOnItemClickListener( new OnItemClickListener() {
@@ -97,22 +121,19 @@ public class SearchActivity extends Activity {
 			}
 		});
 		
-		// Setup customized onScroll listener (Endless scroll)
-		gvResults.setOnScrollListener( new EndlessScrollListener() {
-			
-			@Override
-			public void onLoadMore(int page, int totalItemsCount) {
-				// Making sure it's not being loaded before search query is entered
-				if ( searchQuery.equals("") == false ) {
-					Log.d("DEBUG", "OnLoadMore:" + page + ": Total items count: " + totalItemsCount);
-					startIndex = page*totalItemsCount;
-					shouldClearResult = false;
-
-					requestImageSearchByObject(imageFilterSettings);
-				}
-				
-			}
-		});
+	}
+	
+	/**
+	 * Helper function to request more image data
+	 * @param page
+	 */
+	private void requestMoreImages(int page) {
+		if ( isLastRequestSuccess == true ) {
+			startIndex = page * 8;
+			Log.d("DEBUG", "Request More Image with startIndex" + startIndex);
+			shouldClearResult = false;	// make sure we append data instead of reset
+			requestImageSearchByObject( imageFilterSettings );
+		}
 	}
 	
 	/** Setup view elements */
@@ -143,19 +164,11 @@ public class SearchActivity extends Activity {
 	 */
 	public void onImageSearch(View v) {
 		String query = etQuery.getText().toString();
-		searchQuery = query;
-		
+		searchQuery = query;	// Fetch a new query term
 		resetValues();	// reset values
 				
 		Toast.makeText( this, "Searching for " + query, Toast.LENGTH_SHORT).show();
-		
-		// If there is no customized filter setting, using default one
-		if ( imageFilterSettings == null ) {
-			Log.d("DEBUG", "Default Filter Settings");
-		} else {
-			Log.d("DEBUG", "Customized Filter Settings");
-		}
-		
+				
 		requestImageSearchByObject( imageFilterSettings );
 		
 	}
@@ -170,8 +183,9 @@ public class SearchActivity extends Activity {
 	}
 	
 	private void resetValues() {
+		Log.d("DEBUG", "resetValues is init!");
 		// reset all values
-		startIndex = 4;
+		startIndex = 0;
 
 		// Update flag so that we can have a new fresh result
 		shouldClearResult = true;
@@ -191,8 +205,7 @@ public class SearchActivity extends Activity {
 			imageFilterSettings = filterData;	
 			
 			resetValues();
-			
-			
+
 			// Update the search result with a new filter settings
 			requestImageSearchByObject( filterData );
 		}
@@ -210,6 +223,9 @@ public class SearchActivity extends Activity {
 	private void requestImageSearch(String query, String size, String color, String type, String site) {
 		// Send ASYNC HTTP client Request
 		AsyncHttpClient client = new AsyncHttpClient();
+		
+		isLastRequestSuccess = false;
+		
 		// Query Google Image Search API
 		client.get(
 				getImageQueryURLString(query, size, color, type, site),
@@ -218,17 +234,13 @@ public class SearchActivity extends Activity {
 					// Upon success query
 					@Override
 					public void onSuccess(JSONObject response) {
+						isLastRequestSuccess = true;
 						JSONArray imageJsonResults = null;
-						JSONObject imageCursorResults = null;
 						try {
 							
 							// Get data coming back from API response
 							imageJsonResults = response.getJSONObject("responseData").getJSONArray("results");
-							imageCursorResults = response.getJSONObject("responseData").getJSONObject("cursor");
-							//Log.d("DEBUG", "Total Result " + imageCursorResults.getString("estimatedResultCount"));
-							//Log.d("DEBUG", "Current Page Index is " + imageCursorResults.getString("currentPageIndex"));
-							
-							Log.d("DEBUG", "onSuccess getting response from Google! Total results: " + imageCursorResults.getString("estimatedResultCount"));
+							Log.d("DEBUG", "OnSuccess getting response from Google!");
 							updateImageAdapter( imageJsonResults );
 
 						} catch (JSONException e) {
@@ -261,20 +273,18 @@ public class SearchActivity extends Activity {
 	 * @param imageJsonResults
 	 */
 	private void updateImageAdapter( JSONArray imageJsonResults) {
+		
 		if ( shouldClearResult == true ) {
-			Log.d("DEBUG", "Clear ImageAdapter");
+			Log.d("DEBUG", "Clear --- ImageJsonResults Length "+ imageJsonResults.length() + ": ImageResult length::" + imageResults.size());
+			
 			imageResults.clear();	// clear result
 			imageAdapter.addAll( ImageResult.fromJSONArray(imageJsonResults) ); // parse result and update adapter
-			// TODO: Need to handle what if image not showing up
+			imageAdapter.notifyDataSetChanged();
 		} else {
 			Log.d("DEBUG", "Add more to imageAdapter");
-			imageResults.addAll(ImageResult.fromJSONArray(imageJsonResults));	
-			imageAdapter.notifyDataSetInvalidated();
+			imageAdapter.addAll( ImageResult.fromJSONArray(imageJsonResults) );	// Update adapter
+			imageAdapter.notifyDataSetChanged();
 		}
-		
-		
-		//Log.d("DEBUG", imageResults.toString() );
-		//Log.d("DEBUG", "total " + imageResults.size());
 	}	
 
 	
@@ -308,7 +318,7 @@ public class SearchActivity extends Activity {
 		String filterSite = (site!=null)?GOOLGE_FILTER_IMG_DOMAIN + Uri.encode( site ):"";
 		
 		String result = getImageQueryURLString(query) + filterSize + filterColor + filterType + filterSite;
-		Log.d("DEBUG", "URL Query is " + result + " and startIndex is at " + startIndex );
+		Log.d("DEBUG", "URL Query is " + result  );
 		return result;
 	}
 
