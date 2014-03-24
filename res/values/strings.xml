@@ -8,8 +8,10 @@
     <string name="title_activity_image_display">ImageDisplayActivity</string>
     <string name="title_activity_image_filter">ImageFilterActivity</string>
     <string name="tvFilterHeader">Image Filter Options</string>
-        <string name="filterSizeText">Image Size</string>
-        <string name="tvFilterType">Image Type</string>
-        <string name="tvFilterColor">Image Color</string>
+    <string name="filterSizeText">Image size</string>
+    <string name="tvFilterType">Image type</string>
+    <string name="tvFilterColor">Color filter</string>
+    <string name="etFilterDomainHint">i.e. photobucket.com</string>
+    <string name="tvDomainFilter">Site filter</string>
 
 </resources>

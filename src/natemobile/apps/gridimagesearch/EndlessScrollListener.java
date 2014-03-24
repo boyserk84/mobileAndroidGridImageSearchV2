@@ -58,7 +58,10 @@ public abstract class EndlessScrollListener implements OnScrollListener {
             this.currentPage = this.startingPageIndex;
             this.previousTotalItemCount = totalItemCount;
             Log.d("DEBUG", "EndlessScroller is resetting.");
-            if (totalItemCount == 0) { this.loading = true; } 
+            if (totalItemCount == 0) { 
+            	this.loading = true;
+            	Log.d("DEBUG", "EndlessScroller is resetting and totlaItem is zero!");
+            } 
         }
 
         // If it’s still loading, we check to see if the dataset count has

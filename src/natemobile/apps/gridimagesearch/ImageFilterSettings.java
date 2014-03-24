@@ -14,13 +14,17 @@ public class ImageFilterSettings implements Serializable{
 
 	private static final long serialVersionUID = 5501671489893612952L;
 	
-	private String filterSize ="";
+	private String filterSize = null;
 	
-	private String filterType = "";
+	private String filterType = null;
 	
-	private String filterColor = "";
+	private String filterColor = null;
 	
-	private String filterDomain = "";
+	private String filterDomain = null;
+	
+	
+	/** Default Constructor*/
+	public ImageFilterSettings() {}
 	
 	/**
 	 * Constructor

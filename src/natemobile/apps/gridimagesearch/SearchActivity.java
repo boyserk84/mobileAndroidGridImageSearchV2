@@ -145,15 +145,9 @@ public class SearchActivity extends Activity {
 		String query = etQuery.getText().toString();
 		searchQuery = query;
 		
-		// reset all values
-		startIndex = 4;
-		// Update flag so that we can have a new fresh result
-		shouldClearResult = true;
-				
+		resetValues();	// reset values
 				
 		Toast.makeText( this, "Searching for " + query, Toast.LENGTH_SHORT).show();
-		
-		
 		
 		// If there is no customized filter setting, using default one
 		if ( imageFilterSettings == null ) {
@@ -175,6 +169,14 @@ public class SearchActivity extends Activity {
 		startActivityForResult( i , REQUEST_FILTER_CODE );	
 	}
 	
+	private void resetValues() {
+		// reset all values
+		startIndex = 4;
+
+		// Update flag so that we can have a new fresh result
+		shouldClearResult = true;
+	}
+	
 	/**
 	 * Callback when return to this activity from other activity
 	 */
@@ -187,6 +189,9 @@ public class SearchActivity extends Activity {
 			
 			// Save this filter settings for subsequent used.
 			imageFilterSettings = filterData;	
+			
+			resetValues();
+			
 			
 			// Update the search result with a new filter settings
 			requestImageSearchByObject( filterData );
@@ -216,17 +221,19 @@ public class SearchActivity extends Activity {
 						JSONArray imageJsonResults = null;
 						JSONObject imageCursorResults = null;
 						try {
-							Log.d("DEBUG", "onSuccess getting response from Google!");
+							
 							// Get data coming back from API response
 							imageJsonResults = response.getJSONObject("responseData").getJSONArray("results");
 							imageCursorResults = response.getJSONObject("responseData").getJSONObject("cursor");
 							//Log.d("DEBUG", "Total Result " + imageCursorResults.getString("estimatedResultCount"));
 							//Log.d("DEBUG", "Current Page Index is " + imageCursorResults.getString("currentPageIndex"));
+							
+							Log.d("DEBUG", "onSuccess getting response from Google! Total results: " + imageCursorResults.getString("estimatedResultCount"));
 							updateImageAdapter( imageJsonResults );
 
 						} catch (JSONException e) {
 							e.printStackTrace();
-							Log.d("DEBUG", "JSONException Error");
+							Log.d("DEBUG", "JSONException Error" + e.getMessage() + e.toString());
 						}
 					}
 					
@@ -262,6 +269,7 @@ public class SearchActivity extends Activity {
 		} else {
 			Log.d("DEBUG", "Add more to imageAdapter");
 			imageResults.addAll(ImageResult.fromJSONArray(imageJsonResults));	
+			imageAdapter.notifyDataSetInvalidated();
 		}
 		
 		

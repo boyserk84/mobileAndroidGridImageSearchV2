@@ -6,6 +6,7 @@ import android.os.Bundle;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.widget.ArrayAdapter;
+import android.widget.EditText;
 import android.widget.Spinner;
 
 /**
@@ -17,13 +18,23 @@ import android.widget.Spinner;
  */
 public class ImageFilterActivity extends Activity {
 
+	///////////////////////
+	/// UI elements
+	//////////////////////
+	
 	Spinner spFilterSize;
 	
 	Spinner spFilterType;
 	
 	Spinner spFilterColor;
 	
+	EditText etFilterDomain;
+	
 	MenuItem miSaveSettings;
+	
+	/////////////////////
+	/// Data fields
+	////////////////////
 	
 	
 	private String filterSize;
@@ -33,6 +44,7 @@ public class ImageFilterActivity extends Activity {
 	private String filterDomain;
 	
 	private String filterColor;
+	
 	
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
@@ -46,6 +58,7 @@ public class ImageFilterActivity extends Activity {
 		spFilterSize = (Spinner) findViewById(R.id.spFilterSize);
 		spFilterType = (Spinner) findViewById(R.id.spFilterType);
 		spFilterColor = (Spinner) findViewById(R.id.spFilterColor);
+		etFilterDomain = (EditText) findViewById(R.id.etFilterDomain);
 		
 		setupSpinner( spFilterSize, R.array.filterSize_array );
 		setupSpinner( spFilterType, R.array.filterType_array );
@@ -70,19 +83,23 @@ public class ImageFilterActivity extends Activity {
 		
 	}
 	
+	/**
+	 * Update and fetch filter values from UI inputs
+	 */
 	private void updateFilterValuesFromInput() {
 		filterSize = spFilterSize.getSelectedItem().toString();
 		filterType = spFilterType.getSelectedItem().toString();
 		filterColor = spFilterColor.getSelectedItem().toString();
+		filterDomain = etFilterDomain.getText().toString();
 	}
 	
 	/**
-	 * Callback when users click the filter setting button on the actionbar
+	 * Callback when users click the filter setting button on ActionBar
 	 * @param mi
 	 */
 	public void onSaveFilterSettingsPress(MenuItem mi ) {
 		updateFilterValuesFromInput();
-		ImageFilterSettings newSettings = new ImageFilterSettings( filterSize, filterColor, filterType, filterDomain  );
+		ImageFilterSettings newSettings = new ImageFilterSettings( filterSize, filterColor, filterType, filterDomain );
 		
 		Intent data = new Intent();
 		data.putExtra("result", newSettings);
