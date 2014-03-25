@@ -1,6 +1,5 @@
 package natemobile.apps.gridimagesearch;
 
-import android.util.Log;
 import android.widget.AbsListView;
 import android.widget.AbsListView.OnScrollListener;
 
@@ -8,7 +7,7 @@ import android.widget.AbsListView.OnScrollListener;
  * EndlessScrollListner Abstract Class
  * 
  * Handle Endless Scroll
- * Reference: https://github.com/thecodepath/android_guides/wiki/Endless-Scrolling-with-AdapterViews 
+ * Reference and credits to : https://github.com/thecodepath/android_guides/wiki/Endless-Scrolling-with-AdapterViews 
  * 
  * @author nkemavaha
  *
@@ -16,7 +15,7 @@ import android.widget.AbsListView.OnScrollListener;
 public abstract class EndlessScrollListener implements OnScrollListener {
 	 // The minimum amount of items to have below your current scroll position
     // before loading more.
-	// TODO: NOTE this thing is crazy. This actually makes it work or break!!!!!
+	// NOTE: this thing is crazy. This actually makes it work or break!!!!! Tweak at your own risk!!!
     private int visibleThreshold = 3;
     
     // The current offset index of data you have loaded
@@ -56,7 +55,6 @@ public abstract class EndlessScrollListener implements OnScrollListener {
         // If the total item count is zero and the previous isn't, assume the
         // list is invalidated and should be reset back to initial state
         if (totalItemCount < previousTotalItemCount) {
-        	Log.d("DEBUG", "EndlessScroller is resetting. TotalItemCount:" + totalItemCount + "Previous::" + previousTotalItemCount);
             this.currentPage = this.startingPageIndex;
             this.previousTotalItemCount = totalItemCount;
             if (totalItemCount == 0) { 
@@ -71,22 +69,17 @@ public abstract class EndlessScrollListener implements OnScrollListener {
             loading = false;
             previousTotalItemCount = totalItemCount;
             currentPage++;
-            //Log.d("DEBUG", "EndlessScroller still loading");
         }
 
         // If it isn’t currently loading, we check to see if we have breached
         // the visibleThreshold and need to reload more data.
         // If we do need to reload some more data, we execute onLoadMore to fetch the data.
         if (!loading && (totalItemCount - visibleItemCount)<=(firstVisibleItem + visibleThreshold)) {
-        	Log.d("DEBUG", "EndlessScroller needs to load more data.");
-
-        	// TODO: How the heck this get triggered when there is no scroll going on , just loading the app.
+        	// Note: THis may get called even there is no scroll if scroll event is somehow messed up by the system.
         	onLoadMore(currentPage + 1, totalItemCount);
-        	
             loading = true;
         }
-        
-        Log.d("DEBUG", "EndlessScroll:OnScroll--: Vislble Item Count:: " + visibleItemCount + ": TotalItemCount" + totalItemCount);
+
     }
     
     // Defines the process for actually loading more data based on page
