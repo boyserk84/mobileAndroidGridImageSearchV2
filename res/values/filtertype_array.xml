@@ -2,6 +2,7 @@
 <resources>
 
     <string-array name="filterType_array">
+        <item>NONE</item>
         <item>face</item>
         <item>photo</item>
         <item>clipart</item>

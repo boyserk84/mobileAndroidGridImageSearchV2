@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="horizontal" >
+    
+    <RelativeLayout
+        android:layout_width="0dp"
+        android:layout_height="match_parent"
+        android:layout_weight="1" >
+
+        <EditText
+            android:id="@+id/etQuery"
+            android:maxWidth="200dp"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentLeft="true"
+            android:layout_alignParentTop="true"
+            android:drawableLeft="@drawable/ic_main_logo"
+            android:ems="10"
+            android:hint="@string/searchQueryHint"
+            android:minWidth="250dp"
+            android:textSize="16sp" >
+            <requestFocus />
+
+        </EditText>
+        <Button
+            android:id="@+id/btnSearchAndFilter"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentRight="true"
+            android:layout_alignParentTop="true"
+            android:onClick="onSearchOrFilterClick"
+            android:background="@null"
+            android:drawableLeft="@drawable/ic_search" />
+        
+    </RelativeLayout>
+
+</LinearLayout>

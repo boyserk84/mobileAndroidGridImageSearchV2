@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources><string-array name="filterSize_array">
+    	<item>NONE</item>
         <item>icon</item>
         <item>small</item>
         <item>medium</item>

@@ -87,10 +87,26 @@ public class ImageFilterActivity extends Activity {
 	 * Update and fetch filter values from UI inputs
 	 */
 	private void updateFilterValuesFromInput() {
-		filterSize = spFilterSize.getSelectedItem().toString();
-		filterType = spFilterType.getSelectedItem().toString();
-		filterColor = spFilterColor.getSelectedItem().toString();
+		filterSize = getSpinnerData( spFilterSize );
+		filterType = getSpinnerData( spFilterType );
+		filterColor = getSpinnerData( spFilterColor );
 		filterDomain = etFilterDomain.getText().toString();
+	}
+	
+	/**
+	 * Helper function to get a correct filter value from the given spinner
+	 * @param spinner
+	 * @return Filter value. If none is detected, return null.
+	 */
+	private String getSpinnerData(Spinner spinner ) {
+		String result = spinner.getSelectedItem().toString();
+		
+		if ( result.equals("NONE") ) {
+			return null;
+		}
+		
+		return result;
+		
 	}
 	
 	/**

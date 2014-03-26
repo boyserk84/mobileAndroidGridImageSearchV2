@@ -6,16 +6,21 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import android.app.ActionBar;
 import android.app.Activity;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
+import android.text.Editable;
+import android.text.TextWatcher;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
+import android.view.View.OnClickListener;
 import android.widget.AdapterView;
 import android.widget.AdapterView.OnItemClickListener;
+import android.widget.Button;
 import android.widget.EditText;
 import android.widget.GridView;
 import android.widget.Toast;
@@ -27,12 +32,6 @@ import com.loopj.android.http.JsonHttpResponseHandler;
  * SearchActivity Class
  * Controller for main app -- search image
  * @author nkemavaha
- *
- *
- * Current issues
- * - Image not showing up on the activity although URL to thumbnail image is valid. Coming back if go to diff activity and coming back.
- * - New search query result only showing up 8 and scroll (endlessly) won't work or at least not visible for me.
- *
  */
 public class SearchActivity extends Activity {
 
@@ -54,6 +53,9 @@ public class SearchActivity extends Activity {
 	
 	/** Image result (gridview)*/
 	private GridView gvResults;
+	
+	/** Customized search or filter button */
+	private Button btnSearchAndFilter;
 	
 	/////////////////////
 	/// Data fields
@@ -77,9 +79,18 @@ public class SearchActivity extends Activity {
 	/** Search query term */
 	private String searchQuery = "";
 	
-	
 	/** Flag checking if last request is successful.*/
 	private boolean isLastRequestSuccess = true;
+	
+	/** Flag indicate which mode user is in (search mode vs filter mode)*/
+	private boolean isInSearchMode = true;
+	
+	///////////////////////////////////////////
+	// Internal, only for debugging purpose
+	///////////////////////////////////////////
+	
+	/** Flag determine if we need to show log activity */
+	private boolean isOnProduction = true;
 	
 	
 	@Override
@@ -88,7 +99,8 @@ public class SearchActivity extends Activity {
 		setContentView(R.layout.activity_search);
 		
 		setupViews();
-		Log.d("DEBUG", "StartOnCreate -----------------------------");
+		setupCustomActionBar();
+		showLog("StartOnCreate -----------------------------");
 		
 		// Setup adapter
 		imageAdapter = new ImageResultArrayAdapter( this , imageResults );
@@ -99,9 +111,7 @@ public class SearchActivity extends Activity {
 			
 			@Override
 			public void onLoadMore(int page, int totalItemsCount) {
-				Log.d("DEBUG", "onLoadMore Page:: " + page + ": TotalItemsCount::" + totalItemsCount );
 				requestMoreImages(page);			
-				
 			}
 		});
 		
@@ -113,10 +123,22 @@ public class SearchActivity extends Activity {
 				Intent i = new Intent( getApplicationContext(), ImageDisplayActivity.class );
 				ImageResult imageResult = imageResults.get( position );
 				i.putExtra( "result" , imageResult );
+				i.putExtra( "resultList" , imageResults);
+				i.putExtra( "startPosition", position);
 				startActivity(i);
 			}
 		});
 		
+	}
+	
+	/**
+	 * Helper function for showing debug log so that we can toggle on/off
+	 * @param message
+	 */
+	private void showLog( String message ) {
+		if ( isOnProduction == false ) {
+			Log.d("DEBUG", message);
+		}
 	}
 	
 	/**
@@ -126,7 +148,7 @@ public class SearchActivity extends Activity {
 	private void requestMoreImages(int page) {
 		if ( isLastRequestSuccess == true ) {
 			startIndex = page * 8;
-			Log.d("DEBUG", "Request More Image with startIndex" + startIndex);
+			showLog( "Request More Image with startIndex" + startIndex );
 			shouldClearResult = false;	// make sure we append data instead of reset
 			requestImageSearchByObject( imageFilterSettings );
 		}
@@ -155,15 +177,101 @@ public class SearchActivity extends Activity {
 	}
 	
 	/**
+	 * Setup a custom action bar without using AcitonBarSherlock
+	 * Credits to Jeff G.
+	 */
+	private void setupCustomActionBar() {
+		ActionBar actionBar = getActionBar();
+		
+		actionBar.setCustomView(R.layout.custom_search_bar);
+		
+		btnSearchAndFilter = (Button) actionBar.getCustomView().findViewById(R.id.btnSearchAndFilter);
+		etQuery = (EditText) actionBar.getCustomView().findViewById(R.id.etQuery);
+		
+		// This happens during run-time,therefore we can't just attach onClick() event in XML
+		
+		// Listen for button press on the action bar, depending on which mode we are in
+		// If we are in a search mode then search the image
+		// Otherwise, will open filter activity.
+		btnSearchAndFilter.setOnClickListener( new OnClickListener() {
+			
+			@Override
+			public void onClick(View v) {
+				if ( isInSearchMode ) {
+					onImageSearch( v );
+				} else {
+					onFilterSettingsPress( null );
+				}
+			}
+		});
+		
+		// Listen for text change so we can determine if we are in filter mode or search mode
+		etQuery.addTextChangedListener(new TextWatcher() {
+			
+			@Override
+			public void onTextChanged(CharSequence arg0, int arg1, int arg2, int arg3) {}
+			
+			@Override
+			public void beforeTextChanged(CharSequence arg0, int arg1, int arg2, int arg3) {}
+			
+			@Override
+			public void afterTextChanged(Editable arg0) {
+				setSearchMode( true );
+			}
+		});
+		
+		// Need this to make sure it uses the custom one.
+		actionBar.setDisplayOptions(ActionBar.DISPLAY_SHOW_CUSTOM);
+	}
+	
+	/**
+	 * Helper function to update query input for user
+	 */
+	private void updateQueryInput() {
+		String query = etQuery.getText().toString();
+		searchQuery = query;	// Fetch a new query term	
+	}
+	
+	/**
+	 * Helper function to reset values for the next search term
+	 */
+	private void resetValues() {
+		// reset all values
+		startIndex = 0;
+
+		// Update flag so that we can have a new fresh result
+		shouldClearResult = true;
+	}
+	
+	/**
+	 * Update current image on the searchAndFilter button based on the current mode we are in
+	 */
+	private void updateCurrentModeButton() {
+		if ( isInSearchMode ) {
+			btnSearchAndFilter.setCompoundDrawablesWithIntrinsicBounds( R.drawable.ic_search , 0, 0, 0);
+		} else {
+			btnSearchAndFilter.setCompoundDrawablesWithIntrinsicBounds( R.drawable.ic_settings , 0, 0, 0);
+		}
+	}
+	
+	/**
+	 * Set the current mode and update its visual on the button
+	 * @param enable
+	 */
+	private void setSearchMode(boolean enable) {
+		isInSearchMode = enable;
+		updateCurrentModeButton();
+	}
+	
+	/**
 	 * Callback when search button is clicked.
 	 * @param v
 	 */
 	public void onImageSearch(View v) {
-		String query = etQuery.getText().toString();
-		searchQuery = query;	// Fetch a new query term
+		updateQueryInput();
 		resetValues();	// reset values
 				
-		Toast.makeText( this, "Searching for " + query, Toast.LENGTH_SHORT).show();
+		Toast.makeText( this, "Searching for " + searchQuery, Toast.LENGTH_SHORT).show();
 				
 		requestImageSearchByObject( imageFilterSettings );
 		
@@ -176,15 +284,6 @@ public class SearchActivity extends Activity {
 	public void onFilterSettingsPress(MenuItem mi) {
 		Intent i = new Intent( this, ImageFilterActivity.class );
 		startActivityForResult( i , REQUEST_FILTER_CODE );	
-	}
-	
-	private void resetValues() {
-		Log.d("DEBUG", "resetValues is init!");
-		// reset all values
-		startIndex = 0;
-
-		// Update flag so that we can have a new fresh result
-		shouldClearResult = true;
 	}
 	
 	/**
@@ -204,6 +303,8 @@ public class SearchActivity extends Activity {
 
 			// Update the search result with a new filter settings
 			requestImageSearchByObject( filterData );
+			
+			Toast.makeText( this, "Filters updated for query:" + searchQuery, Toast.LENGTH_SHORT).show();
 		}
 	}
 	
@@ -236,12 +337,12 @@ public class SearchActivity extends Activity {
 							
 							// Get data coming back from API response
 							imageJsonResults = response.getJSONObject("responseData").getJSONArray("results");
-							Log.d("DEBUG", "OnSuccess getting response from Google!");
+							showLog( "OnSuccess getting response from Google!" );
 							updateImageAdapter( imageJsonResults );
 
 						} catch (JSONException e) {
 							e.printStackTrace();
-							Log.d("DEBUG", "JSONException Error" + e.getMessage() + e.toString());
+							showLog( "JSONException Error" + e.getMessage() + e.toString());
 						}
 					}
 					
@@ -254,13 +355,11 @@ public class SearchActivity extends Activity {
 	 * @param obj
 	 */
 	private void requestImageSearchByObject( ImageFilterSettings obj ) {
-		String query = etQuery.getText().toString();
-		searchQuery = query;
-		Log.d("DEBUG", "requestImageSearchByOject:: " + searchQuery);
+		updateQueryInput();
 		if ( obj != null ) {
-			requestImageSearch( query, obj.getFilterSize(), obj.getFilterColor(), obj.getFilterType(), obj.getFilterDomain() );
+			requestImageSearch( searchQuery, obj.getFilterSize(), obj.getFilterColor(), obj.getFilterType(), obj.getFilterDomain() );
 		} else {
-			requestImageSearch( query, null, null, null, null );
+			requestImageSearch( searchQuery, null, null, null, null );
 		}
 	}
 	
@@ -271,16 +370,15 @@ public class SearchActivity extends Activity {
 	private void updateImageAdapter( JSONArray imageJsonResults) {
 		
 		if ( shouldClearResult == true ) {
-			Log.d("DEBUG", "Clear --- ImageJsonResults Length "+ imageJsonResults.length() + ": ImageResult length::" + imageResults.size());
-			
 			imageResults.clear();	// clear result
 			imageAdapter.addAll( ImageResult.fromJSONArray(imageJsonResults) ); // parse result and update adapter
 			imageAdapter.notifyDataSetChanged();
 		} else {
-			Log.d("DEBUG", "Add more to imageAdapter");
 			imageAdapter.addAll( ImageResult.fromJSONArray(imageJsonResults) );	// Update adapter
 			imageAdapter.notifyDataSetChanged();
 		}
+		
+		setSearchMode( false );	// Update current mode
 	}	
 
 	
@@ -314,7 +412,7 @@ public class SearchActivity extends Activity {
 		String filterSite = (site!=null)?GOOLGE_FILTER_IMG_DOMAIN + Uri.encode( site ):"";
 		
 		String result = getImageQueryURLString(query) + filterSize + filterColor + filterType + filterSite;
-		Log.d("DEBUG", "URL Query is " + result  );
+		showLog( "URL Query is " + result  );
 		return result;
 	}
 

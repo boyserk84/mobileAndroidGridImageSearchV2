@@ -6,34 +6,11 @@
     tools:context="natemobile.apps.gridimagesearch.SearchActivity"
     tools:ignore="MergeRootFrame" >
 
-    <EditText
-        android:id="@+id/etQuery"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_alignParentLeft="true"
-        android:layout_alignParentTop="true"
-        android:layout_toLeftOf="@+id/btnSearch"
-        android:drawableLeft="@drawable/ic_search_black"
-        android:ems="10"
-        android:hint="@string/searchQueryHint" >
-
-    </EditText>
-
-    <Button
-        android:id="@+id/btnSearch"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_alignParentRight="true"
-        android:layout_alignParentTop="true"
-        android:onClick="onImageSearch"
-        android:text="@string/btnSearch" />
-
     <GridView
         android:id="@+id/gvResults"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_alignParentLeft="true"
-        android:layout_below="@+id/etQuery"
         android:numColumns="3" >
     </GridView>
 

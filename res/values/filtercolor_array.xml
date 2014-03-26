@@ -2,6 +2,7 @@
 <resources>
 
     <string-array name="filterColor_array">
+        <item>NONE</item>
         <item>black</item>
         <item>blue</item>
         <item>brown</item>

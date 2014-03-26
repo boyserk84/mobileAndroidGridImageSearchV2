@@ -8,7 +8,6 @@ import android.app.Activity;
 import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.drawable.BitmapDrawable;
-import android.graphics.drawable.Drawable;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Environment;
@@ -39,6 +38,7 @@ public class ImageDisplayActivity extends Activity {
 	private SmartImageView ivImage;
 	
 	private ShareActionProvider miShareAction;
+
 	
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
@@ -47,6 +47,7 @@ public class ImageDisplayActivity extends Activity {
 		
 		// Retrieve data from previous activity
 		Intent i = getIntent();
+		
 		ivImage = (SmartImageView) findViewById( R.id.ivResult );
 		imageResult = (ImageResult) i.getSerializableExtra("result");
 		ivImage.setImageUrl( imageResult.getFullUrl() );
@@ -103,7 +104,7 @@ public class ImageDisplayActivity extends Activity {
 			// Grab BitmapData of the image from ImageView object
 			bitmap = ((BitmapDrawable) imageView.getDrawable()).getBitmap();
 		} catch (ClassCastException e) {
-			// Exception error for casting -- this happens randomly
+			// Exception error for casting -- this happens fron now and there.
 			Log.d("DEBUG", "ERROR THROWN:: " + e.getMessage() );
 		}
 		
